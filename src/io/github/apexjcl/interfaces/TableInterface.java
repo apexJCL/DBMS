@@ -1,6 +1,7 @@
 package io.github.apexjcl.interfaces;
 
 import io.github.apexjcl.entities.Column;
+import io.github.apexjcl.entities.Database;
 import io.github.apexjcl.entities.Row;
 
 /**
@@ -80,7 +81,42 @@ public interface TableInterface {
      */
     Row fetchRow(Column[] columns, long position);
 
+    /**
+     * Drops the table. This means it will delete itself and all related data, relations
+     * and so on that can exist.
+     *
+     * @param db    Database instance so it can search for it's relations and delete pertinent data
+     * @return
+     * @throws Exception
+     */
+    boolean drop(Database db) throws Exception;
 
+    /**
+     * Basic Operation
+     */
 
+    /**
+     * Inserts a row into the table
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    boolean insert(Row data) throws Exception;
+
+    /**
+     * Deletes a row from the table
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    boolean delete(Row data) throws Exception;
+
+    /**
+     * Updates a row from the table
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    boolean update(Row data) throws Exception;
 
 }

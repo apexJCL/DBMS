@@ -41,6 +41,12 @@ public interface ColumnInterface {
     byte getRegisterSize();
 
     /**
+     * Returns if the column has any reference to another in another table or the same table
+     * @return
+     */
+    boolean hasReferences();
+
+    /**
      * Types of data that can be stored
      */
     enum Type{

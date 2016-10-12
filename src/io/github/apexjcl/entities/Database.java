@@ -1,0 +1,120 @@
+package io.github.apexjcl.entities;
+
+import io.github.apexjcl.interfaces.DatabaseInterface;
+import io.github.apexjcl.objects.TableDescriptor;
+import io.github.apexjcl.utils.RandomIO;
+import io.github.apexjcl.utils.StringConstants;
+
+import java.io.File;
+import java.io.IOException;
+
+/**
+ * Database handles all files related to a config schema, tables, and so on.
+ * <p>
+ * The Database has a config.db file, that has the following structure:
+ * <p>
+ * <ul>
+ * <li>Current tableID - 4 bytes</li>
+ * </ul>
+ * <p>
+ * Created by José Carlos López on 12/10/2016.
+ */
+public class Database implements DatabaseInterface {
+
+    private File workdir;
+    private Table[] tables;
+
+    private String workpath;
+    private String dbname;
+
+    private int tableID;
+    RandomIO dbdata;
+
+    /**
+     * Creates or opens a new Database.
+     *
+     * @param path Path to the database, ex: C:\Users\user\db\
+     * @param name Name of the database, this case is the folder containing other data, ex: myDB\
+     * @throws Exception
+     */
+    public Database(String path, String name) throws Exception {
+        dbname = name;
+        workpath = path + name;
+        workdir = new File(path, name);
+        if (!workdir.exists()) { // If database does not exists, creates it
+            workdir.mkdir();
+            _setupDB();
+        } else
+            _loadDB();
+    }
+
+    private void _loadDB() throws Exception {
+        dbdata = new RandomIO(this.workpath + StringConstants.DB_DATA_FILENAME, RandomIO.FileMode.RW, false);
+        this.tableID = _readUniqueTableID();
+        String[] table_files = workdir.list((dir, name1) -> dbname.matches(".*\\." + StringConstants.TABLE_EXTENSION));
+        tables = new Table[table_files.length];
+        for (byte i = 0; i < tables.length; i++)
+            tables[i] = new Table(this.workpath, table_files[i], i);
+
+    }
+
+    private void _setupDB() throws IOException {
+        dbdata = new RandomIO(this.workpath + StringConstants.DB_DATA_FILENAME, RandomIO.FileMode.RW, true);
+        // Write initial DB data
+        dbdata.file.writeInt(0); // Current Unique Table Identifier
+        dbdata.file.writeInt(0); // Current Amount of Tables
+    }
+
+    @Override
+    public Table getTableByID(int id) throws Exception {
+        return null;
+    }
+
+    @Override
+    public Table getTableByName(String name) throws Exception {
+        return null;
+    }
+
+    @Override
+    public boolean createTable(TableDescriptor tableDescriptor) throws Exception {
+        Table t = new Table(this.workpath, tableDescriptor.getName(), ++this.tableID);
+        this.tableID++; // Really updates the value
+        _writeUniqueTableID(); // Writes it to persistent file storage
+        // Now begin column management
+        return true;
+    }
+
+    @Override
+    public boolean dropTable(String tableName) throws Exception {
+        Table t = getTableByName(tableName);
+        return false;
+    }
+
+    /**
+     * This method will update the Unique Table ID counter in the file, based on the
+     * actual number stored in memory.
+     * <p>
+     * This method it's meant to keep current dbdata file pointer at place
+     */
+    private void _writeUniqueTableID() throws IOException {
+        long t = dbdata.file.getFilePointer();
+        dbdata.file.seek(0);
+        dbdata.file.writeInt(this.tableID);
+        dbdata.file.seek(t);
+    }
+
+    /**
+     * Reads current table ID from file.
+     * <p>
+     * This method it's meant to keep current dbdata file pointer at place.
+     *
+     * @return
+     */
+    private int _readUniqueTableID() throws IOException {
+        long t = dbdata.file.getFilePointer();
+        dbdata.file.seek(0);
+        int tmp = dbdata.file.readInt();
+        dbdata.file.seek(t);
+        return tmp;
+    }
+}

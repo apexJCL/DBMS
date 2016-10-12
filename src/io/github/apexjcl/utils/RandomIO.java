@@ -13,7 +13,6 @@ public class RandomIO {
     private FileMode mode;
     public RandomAccessFile file;
     private File _file;
-    private long size;
     public boolean newFile;
 
     /**
@@ -78,6 +77,11 @@ public class RandomIO {
 
     public void dispose() throws IOException {
         this.file.close();
+    }
+
+    public void delete() throws Exception {
+        this.file.close();
+        this._file.delete();
     }
 
     public enum FileMode {

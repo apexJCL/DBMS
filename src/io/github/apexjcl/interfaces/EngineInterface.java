@@ -1,8 +1,20 @@
 package io.github.apexjcl.interfaces;
 
+import io.github.apexjcl.entities.Row;
+
 /**
- * Defines the Engine
- *
+ * Defines the Engine.
+ * <p>
+ * Tasks the engine must do:
+ * <p>
+ * <ul>
+ * <li>Create table</li>
+ * <li>Delete table</li>
+ * <li>Insert into table</li>
+ * <li>Update from table</li>
+ * <li>Select from table(s)</li>
+ * </ul>
+ * <p>
  * Created by José Carlos López on 11/10/2016.
  */
 public interface EngineInterface {
@@ -35,5 +47,23 @@ public interface EngineInterface {
     boolean delete(String query) throws Exception;
 
 
+    /**
+     * Receives a general query and tries to determine which action to take over the Database.
+     * <p>
+     * This method will deal with:
+     * <ul>
+     * <li>SELECT</li>
+     * <li>INSERT</li>
+     * <li>UPDATE</li>
+     * <li>DELETE</li>
+     * <li>CREATE</li>
+     * <li>DROP</li>
+     * </ul>
+     *
+     * @param query
+     * @return
+     * @throws Exception
+     */
+    Row query(String query) throws Exception;
 
 }

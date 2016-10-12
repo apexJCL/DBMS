@@ -24,6 +24,7 @@ import io.github.apexjcl.interfaces.ColumnInterface;
  *
  * This can be stored in 1 byte.<br/>
  *
+ *
  * Notes:
  * <ul>
  *     <li>Fields labelled with (*) come after the data type and size declaration, because they are optional.</li>
@@ -49,13 +50,14 @@ public class Column implements ColumnInterface {
     /**
      * Reference table | column ID
      */
-    private int rtid;
-    private int rcid;
+    private int rtid = -100;
+    private int rcid = -100;
 
     /**
      * Size of the register in the file
      */
     private byte size;
+    private int typeAsByte;
 
 
     /**
@@ -199,11 +201,30 @@ public class Column implements ColumnInterface {
 
     @Override
     public void setRegisterSize(byte size) {
-
+        this.size = size;
     }
 
     @Override
     public byte getRegisterSize() {
-        return 0;
+        return this.size;
+    }
+
+    @Override
+    public boolean hasReferences() {
+        return ! (rtid == -100 && rcid == -100);
+    }
+
+    public byte getTypeAsByte() {
+        switch (this.type){
+            case INTEGER:
+                return 0;
+            case DOUBLE:
+                return 1;
+            case STRING:
+                return 2;
+            case UNASSIGNED:
+                return -1;
+        }
+        return -1;
     }
 }
