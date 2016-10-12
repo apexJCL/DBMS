@@ -3,6 +3,35 @@ package io.github.apexjcl.entities;
 import io.github.apexjcl.interfaces.ColumnInterface;
 
 /**
+ * Creates a new Column definition.<br/>
+ * The column has the following structure on a file: <br/>
+ * <ul>
+ *     <li>Name - 25 chars (50 bytes)</li>
+ *     <li>Table Identified - 4 bytes</li>
+ *     <li>Unique ID - 4 bytes</li>
+ *     <li>Type - 1 byte</li>
+ *     <li>Table reference ID* - 4 bytes</li>
+ *     <li>Column ID reference* - 4 bytes</li>
+ * </ul><br/>
+ *
+ * Size of the register, based on data type:
+ *
+ * <ul>
+ *     <li><strong>String:</strong> size = [0-25]</li>
+ *     <li><strong>Integer:</strong> size = 4</li>
+ *     <li><strong>Double:</strong> size = 8</li>
+ * </ul><br/>
+ *
+ * This can be stored in 1 byte.<br/>
+ *
+ * Notes:
+ * <ul>
+ *     <li>Fields labelled with (*) come after the data type and size declaration, because they are optional.</li>
+ *     <li>Columns are delimited in the file by the CRLF (0xD0A)</li>
+ * </ul>
+ *
+ *
+ *
  * Created by José Carlos López on 11/10/2016.
  */
 public class Column implements ColumnInterface {
@@ -27,6 +56,41 @@ public class Column implements ColumnInterface {
      * Size of the register in the file
      */
     private byte size;
+
+
+    /**
+     * Creates a new Column definition.<br/>
+     * The column has the following structure on a file: <br/>
+     * <ul>
+     *     <li>Name - 25 chars (50 bytes)</li>
+     *     <li>Table Identified - 4 bytes</li>
+     *     <li>Unique ID - 4 bytes</li>
+     *     <li>Type - 1 byte</li>
+     *     <li>Table reference ID* - 4 bytes</li>
+     *     <li>Column ID reference* - 4 bytes</li>
+     * </ul><br/>
+     *
+     * Size of the register, based on data type:
+     *
+     * <ul>
+     *     <li><strong>String:</strong> size = [0-25]</li>
+     *     <li><strong>Integer:</strong> size = 4</li>
+     *     <li><strong>Double:</strong> size = 8</li>
+     * </ul><br/>
+     *
+     * This can be stored in 1 byte.<br/>
+     *
+     * Notes:
+     * <ul>
+     *     <li>Fields labelled with (*) come after the data type and size declaration, because they are optional.</li>
+     *     <li>Columns are delimited in the file by the CRLF (0xD0A)</li>
+     * </ul>
+     *
+     *
+     *
+     * Created by José Carlos López on 11/10/2016.
+     */
+    public Column(){}
 
     /**
      * Creates a new table column definition
@@ -54,6 +118,18 @@ public class Column implements ColumnInterface {
             default:
                 return -1;
         }
+    }
+
+    public static Type calculateType(byte b){
+        switch (b){
+            case 0:
+                return Type.INTEGER;
+            case 1:
+                return Type.DOUBLE;
+            case 2:
+                return Type.STRING;
+        }
+        return Type.UNASSIGNED;
     }
 
     @Override
@@ -119,5 +195,15 @@ public class Column implements ColumnInterface {
     @Override
     public int getColumnReference() {
         return rcid;
+    }
+
+    @Override
+    public void setRegisterSize(byte size) {
+
+    }
+
+    @Override
+    public byte getRegisterSize() {
+        return 0;
     }
 }

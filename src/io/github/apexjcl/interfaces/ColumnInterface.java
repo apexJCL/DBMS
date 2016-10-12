@@ -37,11 +37,14 @@ public interface ColumnInterface {
     void setColumnReference(int id);
     int getColumnReference();
 
+    void setRegisterSize(byte size);
+    byte getRegisterSize();
+
     /**
      * Types of data that can be stored
      */
     enum Type{
-        INTEGER, DOUBLE, STRING
+        INTEGER, DOUBLE, STRING, UNASSIGNED
     }
 
 }

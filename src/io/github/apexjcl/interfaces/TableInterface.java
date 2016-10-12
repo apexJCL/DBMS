@@ -18,7 +18,7 @@ public interface TableInterface {
      * Returns the amount of registers in the table
      * @return
      */
-    int registerAmount();
+    long registerAmount();
 
     /**
      * Returns the amount of columns that the table has
