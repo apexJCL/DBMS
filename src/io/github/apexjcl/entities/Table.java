@@ -83,7 +83,7 @@ public class Table implements TableInterface {
             _file.file.writeInt(c.getTableID()); // Write Table ID
             _file.file.writeInt(c.getColumnID()); // Write Column ID
             _file.file.writeByte(c.getTypeAsByte()); // Write Type ID
-            _file.file.writeByte(c.getSize());
+            _file.file.writeByte(c.getRegisterSize());
             if (c.hasReferences()) {
                 _file.file.writeInt(c.getTableReference());
                 _file.file.writeInt(c.getColumnReference());
@@ -165,7 +165,7 @@ public class Table implements TableInterface {
         int size = 0;
         for (Column column :
                 columns) {
-            size += column.getSize();
+            size += column.getRegisterSize();
         }
         this.rowSize = size;
 
@@ -218,7 +218,7 @@ public class Table implements TableInterface {
         long offset = 0;
         for (Column c : columns) {
             if (objective.getName() != c.getName())
-                offset += c.getSize();
+                offset += c.getRegisterSize();
             else
                 return offset;
         }

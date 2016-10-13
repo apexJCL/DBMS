@@ -8,10 +8,10 @@ import java.util.Objects;
 /**
  * Cell implementation, the cell can do the following tasks:
  * <ul>
- *     <li>Retrieve Value</li>
- *     <li>Update value</li>
+ * <li>Retrieve Value</li>
+ * <li>Update value</li>
  * </ul>
- *
+ * <p>
  * Created by José Carlos López on 11/10/2016.
  */
 public class Cell implements CellInterface {
@@ -20,9 +20,10 @@ public class Cell implements CellInterface {
     private Column column;
     private Object value;
 
-    public Cell(){}
+    public Cell() {
+    }
 
-    public Cell(Column columnReference, Object value, long filePosition){
+    public Cell(Column columnReference, Object value, long filePosition) {
         this.column = columnReference;
         this.value = value;
         this.position = filePosition;
@@ -35,7 +36,7 @@ public class Cell implements CellInterface {
 
     @Override
     public byte getSize() {
-        return column.getSize();
+        return column.getRegisterSize();
     }
 
     @Override

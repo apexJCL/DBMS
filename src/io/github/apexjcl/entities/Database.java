@@ -36,7 +36,7 @@ public class Database implements DatabaseInterface {
     /**
      * Creates or opens a new Database.
      *
-     * @param path Path to the database, ex: C:\Users\user\db\
+     * @param path Path to the database, ex: C:\\Users\\user\\db\\
      * @param name Name of the database, this case is the folder containing other data, ex: myDB\
      * @throws Exception
      */
