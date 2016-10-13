@@ -27,8 +27,18 @@ public class Row implements RowInterface {
     }
 
     @Override
+    public void setFilePosition(long position) {
+        this.position = position;
+    }
+
+    @Override
     public Cell[] fetchData() {
         return cells;
+    }
+
+    @Override
+    public void setCells(Cell[] cells) {
+
     }
 
 }
