@@ -50,7 +50,7 @@ public interface ColumnInterface {
      * Types of data that can be stored
      */
     enum Type{
-        INTEGER, DOUBLE, STRING, UNASSIGNED
+        INTEGER, DOUBLE, STRING, UNASSIGNED, DELETED
     }
 
 }

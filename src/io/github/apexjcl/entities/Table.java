@@ -84,7 +84,7 @@ public class Table implements TableInterface {
             _file.file.writeInt(c.getColumnID()); // Write Column ID
             _file.file.writeByte(c.getTypeAsByte()); // Write Type ID
             _file.file.writeByte(c.getSize());
-            if (c.hasReferences()){
+            if (c.hasReferences()) {
                 _file.file.writeInt(c.getTableReference());
                 _file.file.writeInt(c.getColumnReference());
             }
@@ -178,13 +178,74 @@ public class Table implements TableInterface {
     }
 
     @Override
-    public Row fetchRow(long position) {
-        return null;
+    public Row fetchRow(long position) throws IOException {
+        Row tmp = new Row();
+        tmp.setFilePosition(position);
+        Cell[] cells = new Cell[columnAmount()];
+        for (byte i = 0; i < columnAmount(); i++) { // For each existing column
+            cells[i] = new Cell(); // Create a new cell
+            cells[i].setValue(_read(this._file.file.getFilePointer(), columns[i].getType()));  // Assign value
+            cells[i].setColumnDefinition(columns[i]);
+        }
+        tmp.setCells(cells);
+        return tmp;
     }
 
     @Override
-    public Row fetchRow(Column[] columns, long position) {
-        return null;
+    public Row fetchRow(Column[] columns, long position) throws IOException {
+        Row tmp = new Row();  // New Row Object
+        tmp.setFilePosition(position); // Base position for row
+        Cell[] cells = new Cell[columns.length];
+        for (byte i = 0; i < columns.length; i++) {
+            //  Offset to file position
+            this._file.file.seek(position);
+            cells[i] = new Cell();
+            // Seeks the offset based on the column type
+            cells[i].setValue(_read(position + _getOffset(columns[i]), columns[i].getType())); // Fetches value
+            cells[i].setColumnDefinition(columns[i]);
+        }
+        tmp.setCells(cells);
+        return tmp;
+    }
+
+    /**
+     * Returns an offset for reading a value based on a column type
+     *
+     * @param objective
+     * @return
+     */
+    private long _getOffset(Column objective) {
+        long offset = 0;
+        for (Column c : columns) {
+            if (objective.getName() != c.getName())
+                offset += c.getSize();
+            else
+                return offset;
+        }
+        return offset;
+    }
+
+    private Object _read(long position, ColumnInterface.Type type) throws IOException {
+        long tmp = this._file.file.getFilePointer();
+        this._file.file.seek(position);
+        Object object = null;
+        switch (type) {
+            case INTEGER:
+                object = this._file.file.readInt();
+                break;
+            case DOUBLE:
+                object = this._file.file.readDouble();
+                break;
+            case STRING:
+                object = this._file.file.readLine();
+                break;
+            case UNASSIGNED:
+                break;
+            case DELETED:
+                break;
+        }
+        this._file.file.seek(tmp);
+        return object;
     }
 
     /**
@@ -203,30 +264,62 @@ public class Table implements TableInterface {
 
     @Override
     public boolean insert(Row data) throws Exception {
-        return false;
+        return update(data);
     }
 
     @Override
     public boolean delete(Row data) throws Exception {
-        return false;
+        long tmp = this._file.file.getFilePointer();
+        for (Cell c : data.fetchData())
+            _writeData(c, ColumnInterface.Type.DELETED);
+        this._file.file.seek(tmp);
+        return true;
     }
 
     @Override
     public boolean update(Row data) throws Exception {
-        this._file.file.seek(data.getFilePosition());  // Move pointer to file position
-        for (Cell c : data.fetchData()){
-            this._file.file.seek(c.getFilePosition()); // Move pointer to position in file
-            switch (c.getType()){
-                case INTEGER:
-                    break;
-                case DOUBLE:
-                    break;
-                case STRING:
-                    break;
-                case UNASSIGNED:
-                    break;
-            }
+        long tmp = this._file.file.getFilePointer();
+        for (Cell c : data.fetchData())
+            _writeData(c, c.getType());
+        this._file.file.seek(tmp);
+        return true;
+    }
+
+    private void _writeData(Cell cell, ColumnInterface.Type type) throws IOException {
+        long tmp = this._file.file.getFilePointer();
+        this._file.file.seek(cell.getFilePosition());
+        switch (type) {
+            case INTEGER:
+                this._file.file.writeInt((Integer) cell.getValue());
+                break;
+            case DOUBLE:
+                this._file.file.writeDouble((Double) cell.getValue());
+                break;
+            case STRING:
+                this._file.file.writeChars((String) cell.getValue());
+                break;
+            case UNASSIGNED:
+                break;
+            case DELETED:
+                switch (cell.getType()) {
+                    case INTEGER:
+                        this._file.file.writeInt(0);
+                        break;
+                    case DOUBLE:
+                        this._file.file.writeDouble(0d);
+                        break;
+                    case STRING:
+                        for (byte i = 0; i < cell.getSize(); i++) { // A character is unicode, thus 2 bytes are stored
+                            this._file.file.writeShort(0); // A short it's two bytes wide
+                        }
+                        break;
+                    case UNASSIGNED:
+                        break;
+                    case DELETED:
+                        break;
+                }
+                break;
         }
-        return false;
+        this._file.file.seek(tmp); // Restore file pointer
     }
 }

@@ -4,6 +4,8 @@ import io.github.apexjcl.entities.Column;
 import io.github.apexjcl.entities.Database;
 import io.github.apexjcl.entities.Row;
 
+import java.io.IOException;
+
 /**
  * Created by José Carlos López on 11/10/2016.
  */
@@ -70,7 +72,7 @@ public interface TableInterface {
      * @param position File position to find and fetch a full row
      * @return Row object
      */
-    Row fetchRow(long position);
+    Row fetchRow(long position) throws IOException;
 
     /**
      * Allows for fetching of a row and the specified columns
@@ -79,7 +81,7 @@ public interface TableInterface {
      * @param position File position to find and fetch the row
      * @return Row Object
      */
-    Row fetchRow(Column[] columns, long position);
+    Row fetchRow(Column[] columns, long position) throws IOException;
 
     /**
      * Drops the table. This means it will delete itself and all related data, relations

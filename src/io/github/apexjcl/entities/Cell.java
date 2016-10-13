@@ -20,6 +20,8 @@ public class Cell implements CellInterface {
     private Column column;
     private Object value;
 
+    public Cell(){}
+
     public Cell(Column columnReference, Object value, long filePosition){
         this.column = columnReference;
         this.value = value;

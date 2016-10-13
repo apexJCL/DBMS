@@ -13,7 +13,10 @@ public class Row implements RowInterface {
     private long position;
     private Cell[] cells;
 
-    public Row(Cell[] cells, long position){
+    public Row() {
+    }
+
+    public Row(Cell[] cells, long position) {
         this.position = position;
         this.cells = cells;
     }
