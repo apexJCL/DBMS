@@ -86,7 +86,7 @@ public class Database implements DatabaseInterface {
 
     @Override
     public boolean createTable(TableDescriptor tableDescriptor) throws Exception {
-        Table t = new Table(this.workpath, tableDescriptor.getName(), ++this.tableID);
+        Table t = new Table(this.workpath, tableDescriptor.getName(), ++this.tableID, tableDescriptor.getColumns());
         this.tableID++; // Really updates the value
         _writeUniqueTableID(); // Writes it to persistent file storage
         // Now begin column management

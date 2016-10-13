@@ -17,9 +17,9 @@ import java.io.IOException;
  * <li>Amount of current registers - 8 bytes</li>
  * <li>Amount of defined indices - 1 byte</li>
  * <li>Amount of columns - 1 byte</li>
- * <li>Size of row - 8 bytes</li>
+ * <li>Size of row - 4 bytes</li>
  * </ul>
- * <strong>Total size of header is 14 bytes</strong>
+ * <strong>Total size of header is 18 bytes</strong>
  * <p>
  * <p>
  * Created by José Carlos López on 11/10/2016.
@@ -68,6 +68,9 @@ public class Table implements TableInterface {
         this.name = name;
         this.filePath = filePath;
         this.tid = tableID;
+        this.columns = columns;
+        this.colAmount = (byte) columns.length;
+        this.rowSize = getRowSize();
         _file = new RandomIO(filePath + name, RandomIO.FileMode.RW, true);
         _setupTable(columns);
     }
@@ -78,6 +81,7 @@ public class Table implements TableInterface {
         _file.file.writeLong(this.registerAmount); // Register amount is 0
         _file.file.writeByte(this.indexAmount); // Amount of defined indices
         _file.file.writeByte(this.colAmount); // Amount of columns that comprise the table
+        _file.file.writeInt(this.rowSize); // Row size
         for (Column c : columns) {
             _file.file.writeChars(c.getName()); // Write name
             _file.file.writeInt(c.getTableID()); // Write Table ID
@@ -100,6 +104,7 @@ public class Table implements TableInterface {
         this.registerAmount = _file.file.readLong();
         this.indexAmount = _file.file.readByte();
         this.colAmount = _file.file.readByte();
+        this.rowSize = _file.file.readInt();
 
         columns = new Column[colAmount]; // Loading column definition
         for (byte b = 0; b < colAmount; b++) { // Here we load each column from the file
