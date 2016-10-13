@@ -24,6 +24,13 @@ public interface TableInterface {
     long registerAmount();
 
     /**
+     * Returns the file pointer to where a new row can be written to.
+     *
+     * @return
+     */
+    long getNextRegisterPosition();
+
+    /**
      * Returns the amount of columns that the table has
      *
      * @return
@@ -120,5 +127,12 @@ public interface TableInterface {
      * @throws Exception
      */
     boolean update(Row data) throws Exception;
+
+    /**
+     * Returns the columns that comprise a table
+     *
+     * @return
+     */
+    Column[] getColumns();
 
 }

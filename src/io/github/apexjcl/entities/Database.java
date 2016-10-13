@@ -6,6 +6,7 @@ import io.github.apexjcl.utils.RandomIO;
 import io.github.apexjcl.utils.StringConstants;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -54,8 +55,9 @@ public class Database implements DatabaseInterface {
     private void _loadDB() throws Exception {
         dbdata = new RandomIO(this.workpath + StringConstants.DB_DATA_FILENAME, RandomIO.FileMode.RW, false);
         this.tableID = _readUniqueTableID();
-        String[] table_files = workdir.list((dir, name1) -> dbname.matches(".*\\." + StringConstants.TABLE_EXTENSION));
+        String[] table_files = workdir.list((dir, name) -> name.matches(".*\\.tbl"));
         tableMap = new HashMap<>(table_files.length);
+        tableIDMap = new HashMap<>(table_files.length);
         for (byte i = 0; i < table_files.length; i++) {
             Table tmp = new Table(this.workpath, table_files[i], i);
             tableMap.put(tmp.getName(), tmp);
@@ -68,6 +70,8 @@ public class Database implements DatabaseInterface {
         // Write initial DB data
         dbdata.file.writeInt(0); // Current Unique Table Identifier
         dbdata.file.writeInt(0); // Current Amount of Tables
+        tableIDMap = new HashMap<>(0);
+        tableMap = new HashMap<>(0);
     }
 
     @Override
@@ -89,6 +93,8 @@ public class Database implements DatabaseInterface {
         Table t = new Table(this.workpath, tableDescriptor.getName(), ++this.tableID, tableDescriptor.getColumns());
         this.tableID++; // Really updates the value
         _writeUniqueTableID(); // Writes it to persistent file storage
+        tableMap.put(t.getName(), t);
+        tableIDMap.put(t.getTableID(), t); // TODO: fix this inefficient mess
         // Now begin column management
         return true;
     }

@@ -3,6 +3,7 @@ package io.github.apexjcl.entities;
 import io.github.apexjcl.interfaces.ColumnInterface;
 import io.github.apexjcl.interfaces.TableInterface;
 import io.github.apexjcl.utils.RandomIO;
+import io.github.apexjcl.utils.StringConstants;
 
 import java.io.IOException;
 
@@ -18,6 +19,7 @@ import java.io.IOException;
  * <li>Amount of defined indices - 1 byte</li>
  * <li>Amount of columns - 1 byte</li>
  * <li>Size of row - 4 bytes</li>
+ * <li>Header size (including column definitions) - 4 bytes</li>
  * </ul>
  * <strong>Total size of header is 18 bytes</strong>
  * <p>
@@ -34,6 +36,8 @@ public class Table implements TableInterface {
     private int rowSize = -1;
     private byte indexAmount = 0;
     private byte colAmount = 0;
+    private byte[] CRLF = {0x0D, 0X0A};
+    private int _headerSize = 0;
     /**
      *
      */
@@ -46,7 +50,7 @@ public class Table implements TableInterface {
      * @param name
      */
     public Table(String filePath, String name, int tableID) throws Exception {
-        this.name = name;
+        this.name = name.substring(0, name.indexOf("."));
         this.filePath = filePath;
         this.tid = tableID;
         _file = new RandomIO(filePath + name, RandomIO.FileMode.RW, false);
@@ -71,7 +75,7 @@ public class Table implements TableInterface {
         this.columns = columns;
         this.colAmount = (byte) columns.length;
         this.rowSize = getRowSize();
-        _file = new RandomIO(filePath + name, RandomIO.FileMode.RW, true);
+        _file = new RandomIO(filePath + name + "." + StringConstants.TABLE_EXTENSION, RandomIO.FileMode.RW, true);
         _setupTable(columns);
     }
 
@@ -84,6 +88,7 @@ public class Table implements TableInterface {
         _file.file.writeInt(this.rowSize); // Row size
         for (Column c : columns) {
             _file.file.writeChars(c.getName()); // Write name
+            _file.file.write(CRLF); // New line for name separation
             _file.file.writeInt(c.getTableID()); // Write Table ID
             _file.file.writeInt(c.getColumnID()); // Write Column ID
             _file.file.writeByte(c.getTypeAsByte()); // Write Type ID
@@ -94,6 +99,8 @@ public class Table implements TableInterface {
             }
             _file.file.write(new byte[]{0x0D, 0x0A}); // CR LF for column ending
         }
+        this._headerSize = (int) (this._file.file.getFilePointer() + 4);
+        this._file.file.writeInt(_headerSize);
     }
 
     /**
@@ -110,7 +117,7 @@ public class Table implements TableInterface {
         for (byte b = 0; b < colAmount; b++) { // Here we load each column from the file
             columns[b] = new Column();
 
-            _file.file.read(columns[b].getName().getBytes()); // Name
+            columns[b].setName(_file.file.readLine()); // Name
             columns[b].setTableID(_file.file.readInt()); // Table ID
             columns[b].setColumnID(_file.file.readInt()); // Column ID
             columns[b].setType(Column.calculateType(_file.file.readByte())); // Type ID
@@ -123,6 +130,7 @@ public class Table implements TableInterface {
                 columns[b].setColumnReference(_file.file.readInt()); // Read Column ID reference
             }
         }
+        this._headerSize = this._file.file.readInt(); // Read Header Size
     }
 
     /*************************************************** Interface Behaviour ****************************************************/
@@ -135,6 +143,11 @@ public class Table implements TableInterface {
     @Override
     public long registerAmount() {
         return registerAmount;
+    }
+
+    @Override
+    public long getNextRegisterPosition() {
+        return _headerSize + (registerAmount * rowSize);
     }
 
     @Override
@@ -269,7 +282,16 @@ public class Table implements TableInterface {
 
     @Override
     public boolean insert(Row data) throws Exception {
-        return update(data);
+        long tmp = this._file.file.getFilePointer();
+        this.registerAmount++;
+        this._file.file.seek(4);
+        this._file.file.writeLong(this.registerAmount);
+        for (Cell c : data.fetchData()) {
+            c.setFilePosition(data.getFilePosition() + _getOffset(c.getColumnDefinition()));
+            _writeData(c, c.getType());
+        }
+        this._file.file.seek(tmp);
+        return true;
     }
 
     @Override
@@ -288,6 +310,11 @@ public class Table implements TableInterface {
             _writeData(c, c.getType());
         this._file.file.seek(tmp);
         return true;
+    }
+
+    @Override
+    public Column[] getColumns() {
+        return columns;
     }
 
     private void _writeData(Cell cell, ColumnInterface.Type type) throws IOException {

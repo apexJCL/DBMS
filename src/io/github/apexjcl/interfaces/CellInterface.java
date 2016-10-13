@@ -14,6 +14,8 @@ public interface CellInterface {
      */
     long getFilePosition();
 
+    void setFilePosition(long position);
+
     /**
      * Returns the (max) size (in bytes) that the cell can store, based on the data type
      *

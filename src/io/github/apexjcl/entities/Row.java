@@ -38,7 +38,7 @@ public class Row implements RowInterface {
 
     @Override
     public void setCells(Cell[] cells) {
-
+        this.cells = cells;
     }
 
 }

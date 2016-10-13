@@ -7,7 +7,7 @@ public class StringConstants {
 
     public static String DB_DATA_FILENAME = "config.db";
 
-    public static String TABLE_EXTENSION = ".tbl";
+    public static String TABLE_EXTENSION = "tbl";
     public static String DB_DATA_EXTENSION = ".db";
 
 }

@@ -3,8 +3,6 @@ package io.github.apexjcl.entities;
 import io.github.apexjcl.interfaces.CellInterface;
 import io.github.apexjcl.interfaces.ColumnInterface;
 
-import java.util.Objects;
-
 /**
  * Cell implementation, the cell can do the following tasks:
  * <ul>
@@ -23,6 +21,11 @@ public class Cell implements CellInterface {
     public Cell() {
     }
 
+    public Cell(Column columnReference, Object value) {
+        this.column = columnReference;
+        this.value = value;
+    }
+
     public Cell(Column columnReference, Object value, long filePosition) {
         this.column = columnReference;
         this.value = value;
@@ -32,6 +35,11 @@ public class Cell implements CellInterface {
     @Override
     public long getFilePosition() {
         return position;
+    }
+
+    @Override
+    public void setFilePosition(long position) {
+        this.position = position;
     }
 
     @Override

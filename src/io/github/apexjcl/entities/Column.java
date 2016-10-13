@@ -7,7 +7,7 @@ import io.github.apexjcl.interfaces.ColumnInterface;
  * The column has the following structure on a file: <br/>
  * <ul>
  * <li>Name - 25 chars (50 bytes)</li>
- * <li>Table Identified - 4 bytes</li>
+ * <li>Table Identifier - 4 bytes</li>
  * <li>Unique ID - 4 bytes</li>
  * <li>Type - 1 byte</li>
  * <li>Table reference ID* - 4 bytes</li>
@@ -40,7 +40,7 @@ public class Column implements ColumnInterface {
     /**
      * Column name | type
      */
-    private String name;
+    private String name = String.valueOf(new char[25]);
     private Type type;
     /**
      * Table | Column ID
@@ -109,6 +109,22 @@ public class Column implements ColumnInterface {
         this.tid = tableID;
         this.type = type;
         this.size = _calculateSize();
+    }
+
+    /**
+     * Creates a new table column definition
+     * @param name
+     * @param type
+     * @param tableID
+     * @param uniqueCID
+     * @param size
+     */
+    public Column(String name, Type type, int tableID, int uniqueCID, byte size){
+        this.name = name;
+        this.cid = uniqueCID;
+        this.tid = tableID;
+        this.type = type;
+        this.size = size;
     }
 
     private byte _calculateSize() {
@@ -203,7 +219,7 @@ public class Column implements ColumnInterface {
 
     @Override
     public byte getRegisterSize() {
-        return this.size;
+        return this.type == Type.STRING ? (byte) (this.size * 2) : this.size;
     }
 
     @Override
