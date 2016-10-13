@@ -198,7 +198,7 @@ public class Table implements TableInterface {
     public boolean drop(Database database) throws Exception {
         // TODO: Add constraints like "DROP CASCADE" and "RESTRICT"
         this._file.delete();
-        return false;
+        return true;
     }
 
     @Override
@@ -213,6 +213,20 @@ public class Table implements TableInterface {
 
     @Override
     public boolean update(Row data) throws Exception {
+        this._file.file.seek(data.getFilePosition());  // Move pointer to file position
+        for (Cell c : data.fetchData()){
+            this._file.file.seek(c.getFilePosition()); // Move pointer to position in file
+            switch (c.getType()){
+                case INTEGER:
+                    break;
+                case DOUBLE:
+                    break;
+                case STRING:
+                    break;
+                case UNASSIGNED:
+                    break;
+            }
+        }
         return false;
     }
 }

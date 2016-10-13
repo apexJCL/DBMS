@@ -7,6 +7,7 @@ import io.github.apexjcl.utils.StringConstants;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Database handles all files related to a config schema, tables, and so on.
@@ -22,10 +23,12 @@ import java.io.IOException;
 public class Database implements DatabaseInterface {
 
     private File workdir;
-    private Table[] tables;
 
     private String workpath;
     private String dbname;
+
+    private HashMap<String, Table> tableMap;
+    private HashMap<Integer, Table> tableIDMap;
 
     private int tableID;
     RandomIO dbdata;
@@ -52,10 +55,12 @@ public class Database implements DatabaseInterface {
         dbdata = new RandomIO(this.workpath + StringConstants.DB_DATA_FILENAME, RandomIO.FileMode.RW, false);
         this.tableID = _readUniqueTableID();
         String[] table_files = workdir.list((dir, name1) -> dbname.matches(".*\\." + StringConstants.TABLE_EXTENSION));
-        tables = new Table[table_files.length];
-        for (byte i = 0; i < tables.length; i++)
-            tables[i] = new Table(this.workpath, table_files[i], i);
-
+        tableMap = new HashMap<>(table_files.length);
+        for (byte i = 0; i < table_files.length; i++) {
+            Table tmp = new Table(this.workpath, table_files[i], i);
+            tableMap.put(tmp.getName(), tmp);
+            tableIDMap.put(tmp.getTableID(), tmp); // TODO: fix this inefficient mess
+        }
     }
 
     private void _setupDB() throws IOException {
@@ -67,12 +72,16 @@ public class Database implements DatabaseInterface {
 
     @Override
     public Table getTableByID(int id) throws Exception {
-        return null;
+        if (!tableIDMap.containsKey(id))
+            throw new Exception("Invalid Table ID");
+        return tableIDMap.get(id);
     }
 
     @Override
     public Table getTableByName(String name) throws Exception {
-        return null;
+        if (!tableMap.containsKey(name))
+            throw new Exception("Table not found");
+        return tableMap.get(name);
     }
 
     @Override
@@ -87,7 +96,7 @@ public class Database implements DatabaseInterface {
     @Override
     public boolean dropTable(String tableName) throws Exception {
         Table t = getTableByName(tableName);
-        return false;
+        return t.drop(this);
     }
 
     /**
