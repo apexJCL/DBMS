@@ -100,13 +100,11 @@ public class Column implements ColumnInterface {
      *
      * @param name      Name of the column
      * @param type      Data type the column will handle
-     * @param tableID   Table identifier
      * @param uniqueCID Unique Column Identifier, based per table
      */
-    public Column(String name, Type type, int tableID, int uniqueCID) {
+    public Column(String name, Type type, int uniqueCID) {
         this.name = name;
         this.cid = uniqueCID;
-        this.tid = tableID;
         this.type = type;
         this.size = _calculateSize();
     }
