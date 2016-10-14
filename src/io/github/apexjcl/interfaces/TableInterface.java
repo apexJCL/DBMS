@@ -31,6 +31,13 @@ public interface TableInterface {
     long getNextRegisterPosition();
 
     /**
+     * Returns a register by position, ej 1, 2... 4
+     *
+     * @return
+     */
+    Row getRegisterByPosition(int position) throws IOException;
+
+    /**
      * Returns the amount of columns that the table has
      *
      * @return

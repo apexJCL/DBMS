@@ -151,6 +151,12 @@ public class Table implements TableInterface {
     }
 
     @Override
+    public Row getRegisterByPosition(int position) throws IOException {
+        long p = _headerSize + (position * rowSize);
+        return fetchRow(p);
+    }
+
+    @Override
     public int columnAmount() {
         return columns.length;
     }
