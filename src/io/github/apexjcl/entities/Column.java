@@ -33,6 +33,8 @@ import io.github.apexjcl.interfaces.ColumnInterface;
  * <p>
  * <p>
  * <p>
+ * <p>
+ * TODO: Optimize registerSize value only if the type is a String, also check it on {@link Table}
  * Created by José Carlos López on 11/10/2016.
  */
 public class Column implements ColumnInterface {
@@ -40,7 +42,7 @@ public class Column implements ColumnInterface {
     /**
      * Column name | type
      */
-    private String name = String.valueOf(new char[25]);
+    private String name;
     private Type type;
     /**
      * Table | Column ID
@@ -57,6 +59,11 @@ public class Column implements ColumnInterface {
      * Size of the register in the file
      */
     private byte size;
+    /**
+     * Offset from the register position
+     */
+    private byte offset = 0;
+
     private int typeAsByte;
 
 
@@ -92,37 +99,128 @@ public class Column implements ColumnInterface {
      * <p>
      * Created by José Carlos López on 11/10/2016.
      */
-    public Column() {
+    private Column() {
     }
 
     /**
-     * Creates a new table column definition
+     * Creates a new instance of the Column type for a String type
      *
-     * @param name      Name of the column
-     * @param type      Data type the column will handle
-     * @param uniqueCID Unique Column Identifier, based per table
+     * @param name
+     * @param length
+     * @param UCID
+     * @return
+     * @throws Exception
      */
-    public Column(String name, Type type, int uniqueCID) {
-        this.name = name;
-        this.cid = uniqueCID;
-        this.type = type;
-        this.size = _calculateSize();
+    public static Column newString(String name, byte length, int UCID) throws Exception {
+        if (length > 25)
+            throw new Exception("String size can't be more than 25 characters");
+        Column tmp = _newColumn(name, Type.STRING, UCID);
+        tmp.size = length;
+        return tmp;
+    }
+
+
+    /**
+     * Creates a new Column of String type, for the given table id.
+     *
+     * @param name
+     * @param UTID
+     * @param UCID
+     * @param length
+     * @return
+     * @throws Exception
+     */
+    public static Column newString(String name, int UTID, int UCID, byte length) throws Exception {
+        Column tmp = newString(name, length, UCID);
+        tmp.tid = UTID;
+        return tmp;
     }
 
     /**
-     * Creates a new table column definition
+     * Creates a new instance of the Column type for an Integer Type
+     *
+     * @param name
+     * @param UCID
+     * @return
+     * @throws Exception
+     */
+    public static Column newInteger(String name, int UCID) throws Exception {
+        return _newColumn(name, Type.INTEGER, UCID);
+    }
+
+    /**
+     * Creates a new instance of the Column type for an Integer Type
+     *
+     * @param name
+     * @param UTID
+     * @param UCID
+     * @return
+     * @throws Exception
+     */
+    public static Column newInteger(String name, int UTID, int UCID) throws Exception {
+        Column tmp = newInteger(name, UCID);
+        tmp.tid = UTID;
+        return tmp;
+    }
+
+    /**
+     * Creates a new instance of the Column type for a Double type
+     *
+     * @param name
+     * @param UCID
+     * @return
+     * @throws Exception
+     */
+    public static Column newDouble(String name, int UCID) throws Exception {
+        return _newColumn(name, Type.DOUBLE, UCID);
+    }
+
+    /**
+     * Creates a new instance of the Column type for a Double type
+     *
+     * @param name
+     * @param UTID
+     * @param UCID
+     * @return
+     * @throws Exception
+     */
+    public static Column newDouble(String name, int UTID, int UCID) throws Exception {
+        Column tmp = newDouble(name, UCID);
+        tmp.tid = UTID;
+        return tmp;
+    }
+
+    /**
+     * Creates a new column for the given type.
+     *
      * @param name
      * @param type
-     * @param tableID
-     * @param uniqueCID
-     * @param size
+     * @param UCID
+     * @return
+     * @throws Exception
      */
-    public Column(String name, Type type, int tableID, int uniqueCID, byte size){
-        this.name = name;
-        this.cid = uniqueCID;
-        this.tid = tableID;
-        this.type = type;
-        this.size = size;
+    private static Column _newColumn(String name, Type type, int UCID) throws Exception {
+        Column tmp = new Column();
+        StringBuilder sb = new StringBuilder(name.length() + 2);
+        sb.append(name).append("\r\n");
+        tmp.name = sb.toString(); // Column name is delimited by a CRLF
+        switch (type) {
+            case INTEGER:
+                tmp.size = 4;
+                break;
+            case DOUBLE:
+                tmp.size = 8;
+                break;
+            case STRING: // Size is defined in the parent method that defines
+                break;
+            case UNASSIGNED:
+            case DELETED:
+            default:
+                throw new Exception("Type is missing");
+        }
+        tmp.type = type;
+        tmp.cid = UCID;
+        return tmp;
     }
 
     private byte _calculateSize() {
@@ -223,6 +321,16 @@ public class Column implements ColumnInterface {
     @Override
     public boolean hasReferences() {
         return !(rtid == -100 && rcid == -100);
+    }
+
+    @Override
+    public byte getOffset() {
+        return offset;
+    }
+
+    @Override
+    public void setOffset(byte offset) {
+        this.offset = offset;
     }
 
     public byte getTypeAsByte() {

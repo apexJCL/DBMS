@@ -1,7 +1,9 @@
 package io.github.apexjcl;
 
-import io.github.apexjcl.entities.*;
-import io.github.apexjcl.interfaces.ColumnInterface;
+import io.github.apexjcl.entities.Column;
+import io.github.apexjcl.entities.Database;
+import io.github.apexjcl.entities.Row;
+import io.github.apexjcl.entities.Table;
 import io.github.apexjcl.objects.TableDescriptor;
 
 public class Main {
@@ -10,13 +12,13 @@ public class Main {
         String home = "C:\\Users\\zero_\\";
         Database db = new Database(home, "testdb\\");
         TableDescriptor td = new TableDescriptor("test", new Column[]{
-                new Column("id", ColumnInterface.Type.INTEGER, 0, 0),
-                new Column("name", ColumnInterface.Type.STRING, 0, 1, (byte) 10),
-                new Column("age", ColumnInterface.Type.INTEGER, 0, 3)
+                Column.newInteger("id", 0),
+                Column.newString("nombre", (byte) 20, 1),
+                Column.newInteger("edad", 2)
         });
-        //db.createTable(td);
-        Table test = db.getTableByName("test");
-        Row registerByPosition = test.getRegisterByPosition(0);
+        db.createTable(td);
+        //Table test = db.getTableByName("test");
+        //Row registerByPosition = test.getRegisterByPosition(0);
 //        Column[] columns = test.getColumns();
 //        Row t = new Row();
 //        t.setFilePosition(test.getNextRegisterPosition());

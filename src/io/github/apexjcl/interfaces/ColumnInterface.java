@@ -53,6 +53,18 @@ public interface ColumnInterface {
     boolean hasReferences();
 
     /**
+     * Within each register, lays an absolute position for each value.
+     * <p>
+     * This method returns the offset from the register position to the beginning of the same
+     *
+     * @return
+     */
+    byte getOffset();
+    void setOffset(byte offset);
+
+    // Types
+
+    /**
      * Types of data that can be stored
      */
     enum Type {

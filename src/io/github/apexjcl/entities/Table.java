@@ -41,11 +41,6 @@ public class Table implements TableInterface {
     private byte[] CRLF = {0x0D, 0X0A};
     private int _headerSize = 0;
     /**
-     *
-     */
-    private RandomIO _file;
-
-    /**
      * Unique Column Identifier
      */
     private byte ucid;
@@ -74,13 +69,14 @@ public class Table implements TableInterface {
      * @param name
      */
     public Table(String filePath, String name, int tableID) throws Exception {
-        this.name = name.substring(0, name.indexOf("."));
+        this.name = name;
         this.filePath = filePath;
         this.utid = tableID;
-        _file = new RandomIO(filePath + name, RandomIO.FileMode.RW, false);
         _loadDescription();
         _loadConfiguration();
-        _loadTable();
+        if (indexAmount > 0)
+            _loadIndices();
+        f_tbl = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_EXTENSION), RandomIO.FileMode.RW, false);
     }
 
     /**
@@ -105,7 +101,7 @@ public class Table implements TableInterface {
         _setupConfiguration();
         if (indexAmount > 0)
             _setupIndices();
-        _file = new RandomIO(filePath + name + "." + StringConstants.TABLE_EXTENSION, RandomIO.FileMode.RW, true);
+        f_tbl = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_EXTENSION), RandomIO.FileMode.RW, true);
     }
 
     private void _setupIndices() {
@@ -114,17 +110,31 @@ public class Table implements TableInterface {
         }
     }
 
+    private void _loadIndices() {
+        for (byte i = 0; i < indexAmount; i++) {
+            // TODO: write indices definition and write process
+        }
+    }
+
+    /**
+     * Setups description file
+     *
+     * @throws IOException
+     */
     private void _setupDescription() throws IOException {
         f_desc = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_DESC_EXTENSION), RandomIO.FileMode.RW, true);
         f_desc.file.writeByte(colAmount);
         ucid = 0; // Unique Column Identifier
+        byte offset = 0;
         for (Column c : columns) {
+            f_desc.file.writeByte(c.getTypeAsByte()); // Write Type
             f_desc.file.writeChars(c.getName()); // Write name
             f_desc.file.write(CRLF); // New line for name separation
             f_desc.file.writeInt(this.utid); // Write Table ID
             f_desc.file.writeInt(ucid++); // Write Column ID
-            f_desc.file.writeByte(c.getTypeAsByte()); // Write Type
-            f_desc.file.writeByte(c.getRegisterSize());
+            f_desc.file.writeByte(c.getRegisterSize()); // Write registerSize
+            f_desc.file.writeByte(offset);
+            offset += c.getRegisterSize(); // Increase offset
             if (c.hasReferences()) { // If the column is a reference to another
                 f_desc.file.writeInt(c.getTableReference()); // Write it
                 f_desc.file.writeInt(c.getColumnReference());
@@ -134,19 +144,36 @@ public class Table implements TableInterface {
         f_desc.file.writeInt(rowSize); // Row Size
     }
 
-    private void _loadDescription() throws IOException {
+    /**
+     * Loads description file into memory
+     *
+     * @throws IOException
+     */
+    private void _loadDescription() throws Exception {
         f_desc = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_DESC_EXTENSION), RandomIO.FileMode.RW, false);
         this.colAmount = f_desc.file.readByte();
         columns = new Column[colAmount]; // Loading column definition
         for (byte b = 0; b < colAmount; b++) { // Here we load each column from the file
-            columns[b] = new Column();
 
-            columns[b].setName(f_desc.file.readLine()); // Name
-            columns[b].setTableID(f_desc.file.readInt()); // Table ID
-            columns[b].setColumnID(f_desc.file.readInt()); // Column ID
-            columns[b].setType(Column.calculateType(f_desc.file.readByte())); // Type ID
-            columns[b].setRegisterSize(_file.file.readByte()); // Size
-
+            ColumnInterface.Type type = Column.calculateType(f_desc.file.readByte()); // Calculate column type
+            switch (type) {
+                case INTEGER:
+                    columns[b] = Column.newInteger(f_desc.file.readLine(), f_desc.file.readInt(), f_desc.file.readInt());
+                    columns[b].setRegisterSize(f_desc.file.readByte()); // Size
+                    break;
+                case DOUBLE:
+                    columns[b] = Column.newDouble(f_desc.file.readLine(), f_desc.file.readInt(), f_desc.file.readInt());
+                    columns[b].setRegisterSize(f_desc.file.readByte()); // Size
+                    break;
+                case STRING:
+                    columns[b] = Column.newString(f_desc.file.readLine(), f_desc.file.readInt(), f_desc.file.readInt(), f_desc.file.readByte());
+                    break;
+                case UNASSIGNED:
+                case DELETED:
+                default:
+                    throw new IOException("Data type could not be found or is missing");
+            }
+            columns[b].setOffset(f_desc.file.readByte());
             byte[] tmp = {f_desc.file.readByte(), f_desc.file.readByte()}; // If applies a reference
             if (tmp[0] != 0x0D && tmp[1] != 0x0A) { // CR LF means end of the column
                 f_desc.file.seek(f_desc.file.getFilePointer() - tmp.length); // Go back
@@ -157,6 +184,11 @@ public class Table implements TableInterface {
         this.rowSize = f_desc.file.readInt();
     }
 
+    /**
+     * Setups configuration file
+     *
+     * @throws IOException
+     */
     private void _setupConfiguration() throws IOException {
         f_conf = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_CONF_EXTENSION), RandomIO.FileMode.RW, true);
         f_conf.file.writeInt(utid); // Write Unique table identifier
@@ -165,65 +197,17 @@ public class Table implements TableInterface {
         _updateUCID();
     }
 
-    private void _loadConfiguration() throws IOException{
+    /**
+     * Loads configuration file
+     *
+     * @throws IOException
+     */
+    private void _loadConfiguration() throws IOException {
         f_conf = new RandomIO(Utils.concatFilepath(filePath, name, StringConstants.TABLE_CONF_EXTENSION), RandomIO.FileMode.RW, false);
         this.utid = f_conf.file.readByte(); // Offset 0x0
         this.registerAmount = f_conf.file.readLong(); // Offset 0x04
         this.indexAmount = f_conf.file.readByte(); // Offset 0x0C
         this.ucid = f_conf.file.readByte(); // Offset 0x0D
-    }
-
-    private void _setupTable(Column[] columns) throws IOException {
-        _file.file.writeInt(this.utid); // Table ID
-        _file.file.writeLong(this.registerAmount); // Register amount is 0
-        _file.file.writeByte(this.indexAmount); // Amount of defined indices
-        _file.file.writeByte(this.colAmount); // Amount of columns that comprise the table
-        _file.file.writeInt(this.rowSize); // Row size
-//        for (Column c : columns) {
-//            _file.file.writeChars(c.getName()); // Write name
-//            _file.file.write(CRLF); // New line for name separation
-//            _file.file.writeInt(c.getTableID()); // Write Table ID
-//            _file.file.writeInt(c.getColumnID()); // Write Column ID
-//            _file.file.writeByte(c.getTypeAsByte()); // Write Type ID
-//            _file.file.writeByte(c.getRegisterSize());
-//            if (c.hasReferences()) {
-//                _file.file.writeInt(c.getTableReference());
-//                _file.file.writeInt(c.getColumnReference());
-//            }
-//            _file.file.write(new byte[]{0x0D, 0x0A}); // CR LF for column ending
-//        }
-        this._headerSize = (int) (this._file.file.getFilePointer() + 4);
-        this._file.file.writeInt(_headerSize);
-    }
-
-    /**
-     * Loads the Column definitions that comprise the table from the file
-     */
-    private void _loadTable() throws IOException {
-        this.utid = _file.file.readInt();
-        this.registerAmount = _file.file.readLong();
-        this.indexAmount = _file.file.readByte();
-        this.colAmount = _file.file.readByte();
-        this.rowSize = _file.file.readInt();
-
-//        columns = new Column[colAmount]; // Loading column definition
-//        for (byte b = 0; b < colAmount; b++) { // Here we load each column from the file
-//            columns[b] = new Column();
-//
-//            columns[b].setName(_file.file.readLine()); // Name
-//            columns[b].setTableID(_file.file.readInt()); // Table ID
-//            columns[b].setColumnID(_file.file.readInt()); // Column ID
-//            columns[b].setType(Column.calculateType(_file.file.readByte())); // Type ID
-//            columns[b].setRegisterSize(_file.file.readByte()); // Size
-//
-//            byte[] tmp = {_file.file.readByte(), _file.file.readByte()}; // If applies a reference
-//            if (tmp[0] != 0x0D && tmp[1] != 0x0A) { // CR LF means end of the column
-//                _file.file.seek(_file.file.getFilePointer() - tmp.length); // Go back
-//                columns[b].setTableReference(_file.file.readInt()); // Read Table Reference
-//                columns[b].setColumnReference(_file.file.readInt()); // Read Column ID reference
-//            }
-//        }
-        this._headerSize = this._file.file.readInt(); // Read Header Size
     }
 
     /*************************************************** Interface Behaviour ****************************************************/
@@ -245,8 +229,7 @@ public class Table implements TableInterface {
 
     @Override
     public Row getRegisterByPosition(int position) throws IOException {
-        long p = _headerSize + (position * rowSize);
-        return fetchRow(p);
+        return fetchRow(position * rowSize);
     }
 
     @Override
@@ -301,7 +284,7 @@ public class Table implements TableInterface {
         Cell[] cells = new Cell[columnAmount()];
         for (byte i = 0; i < columnAmount(); i++) { // For each existing column
             cells[i] = new Cell(); // Create a new cell
-            cells[i].setValue(_read(this._file.file.getFilePointer(), columns[i].getType()));  // Assign value
+            cells[i].setValue(_read(f_tbl.file.getFilePointer(), columns[i].getType()));  // Assign value
             cells[i].setColumnDefinition(columns[i]);
         }
         tmp.setCells(cells);
@@ -315,7 +298,7 @@ public class Table implements TableInterface {
         Cell[] cells = new Cell[columns.length];
         for (byte i = 0; i < columns.length; i++) {
             //  Offset to file position
-            this._file.file.seek(position);
+            this.f_tbl.file.seek(position);
             cells[i] = new Cell();
             // Seeks the offset based on the column type
             cells[i].setValue(_read(position + _getOffset(columns[i]), columns[i].getType())); // Fetches value
@@ -343,26 +326,51 @@ public class Table implements TableInterface {
     }
 
     private Object _read(long position, ColumnInterface.Type type) throws IOException {
-        long tmp = this._file.file.getFilePointer();
-        this._file.file.seek(position);
+        long tmp = this.f_tbl.file.getFilePointer();
+        this.f_tbl.file.seek(position);
         Object object = null;
         switch (type) {
             case INTEGER:
-                object = this._file.file.readInt();
+                object = f_tbl.file.readInt();
                 break;
             case DOUBLE:
-                object = this._file.file.readDouble();
+                object = f_tbl.file.readDouble();
                 break;
             case STRING:
-                object = this._file.file.readLine();
+                object = f_tbl.file.readLine();
                 break;
             case UNASSIGNED:
                 break;
             case DELETED:
                 break;
         }
-        this._file.file.seek(tmp);
+        f_tbl.file.seek(tmp);
         return object;
+    }
+
+    private Object _read(Column column, Cell cell) throws IOException {
+        long tmp = f_tbl.file.getFilePointer();
+        Object o = null;
+        switch (column.getType()) {
+            case INTEGER:
+                o = f_tbl.file.readInt();
+                break;
+            case DOUBLE:
+                o = f_tbl.file.readDouble();
+                break;
+            case STRING:
+                char[] c = new char[column.getRegisterSize()];
+                for (byte i = 0; i < column.getRegisterSize(); i++) {
+
+                }
+                break;
+            case UNASSIGNED:
+            case DELETED:
+            default:
+                throw new IOException("Data type was not assigned");
+        }
+        f_tbl.file.seek(tmp);
+        return o;
     }
 
     /**
@@ -375,39 +383,39 @@ public class Table implements TableInterface {
     @Override
     public boolean drop(Database database) throws Exception {
         // TODO: Add constraints like "DROP CASCADE" and "RESTRICT"
-        this._file.delete();
+        f_tbl.delete();
         return true;
     }
 
     @Override
     public boolean insert(Row data) throws Exception {
-        long tmp = this._file.file.getFilePointer();
+        long tmp = f_tbl.file.getFilePointer();
         this.registerAmount++;
-        this._file.file.seek(4);
-        this._file.file.writeLong(this.registerAmount);
+        f_tbl.file.seek(4);
+        f_tbl.file.writeLong(this.registerAmount);
         for (Cell c : data.fetchData()) {
             c.setFilePosition(data.getFilePosition() + _getOffset(c.getColumnDefinition()));
             _writeData(c, c.getType());
         }
-        this._file.file.seek(tmp);
+        f_tbl.file.seek(tmp);
         return true;
     }
 
     @Override
     public boolean delete(Row data) throws Exception {
-        long tmp = this._file.file.getFilePointer();
+        long tmp = f_tbl.file.getFilePointer();
         for (Cell c : data.fetchData())
             _writeData(c, ColumnInterface.Type.DELETED);
-        this._file.file.seek(tmp);
+        f_tbl.file.seek(tmp);
         return true;
     }
 
     @Override
     public boolean update(Row data) throws Exception {
-        long tmp = this._file.file.getFilePointer();
+        long tmp = f_tbl.file.getFilePointer();
         for (Cell c : data.fetchData())
             _writeData(c, c.getType());
-        this._file.file.seek(tmp);
+        f_tbl.file.seek(tmp);
         return true;
     }
 
@@ -417,31 +425,31 @@ public class Table implements TableInterface {
     }
 
     private void _writeData(Cell cell, ColumnInterface.Type type) throws IOException {
-        long tmp = this._file.file.getFilePointer();
-        this._file.file.seek(cell.getFilePosition());
+        long tmp = f_tbl.file.getFilePointer();
+        f_tbl.file.seek(cell.getFilePosition());
         switch (type) {
             case INTEGER:
-                this._file.file.writeInt((Integer) cell.getValue());
+                f_tbl.file.writeInt((Integer) cell.getValue());
                 break;
             case DOUBLE:
-                this._file.file.writeDouble((Double) cell.getValue());
+                f_tbl.file.writeDouble((Double) cell.getValue());
                 break;
             case STRING:
-                this._file.file.writeChars((String) cell.getValue());
+                f_tbl.file.writeChars((String) cell.getValue());
                 break;
             case UNASSIGNED:
                 break;
             case DELETED:
                 switch (cell.getType()) {
                     case INTEGER:
-                        this._file.file.writeInt(0);
+                        f_tbl.file.writeInt(0);
                         break;
                     case DOUBLE:
-                        this._file.file.writeDouble(0d);
+                        f_tbl.file.writeDouble(0d);
                         break;
                     case STRING:
                         for (byte i = 0; i < cell.getSize(); i++) { // A character is unicode, thus 2 bytes are stored
-                            this._file.file.writeShort(0); // A short it's two bytes wide
+                            f_tbl.file.writeShort(0); // A short it's two bytes wide
                         }
                         break;
                     case UNASSIGNED:
@@ -451,7 +459,7 @@ public class Table implements TableInterface {
                 }
                 break;
         }
-        this._file.file.seek(tmp); // Restore file pointer
+        f_tbl.file.seek(tmp); // Restore file pointer
     }
 
     /**
