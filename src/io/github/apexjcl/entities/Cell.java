@@ -2,6 +2,9 @@ package io.github.apexjcl.entities;
 
 import io.github.apexjcl.interfaces.CellInterface;
 import io.github.apexjcl.interfaces.ColumnInterface;
+import io.github.apexjcl.utils.RandomIO;
+
+import java.io.IOException;
 
 /**
  * Cell implementation, the cell can do the following tasks:
@@ -18,7 +21,8 @@ public class Cell implements CellInterface {
     private Column column;
     private Object value;
 
-    public Cell() {
+    public Cell() throws Exception {
+        throw new Exception("Empty constructor not allowed");
     }
 
     public Cell(Column columnReference, Object value) {
@@ -70,5 +74,31 @@ public class Cell implements CellInterface {
     @Override
     public void setValue(Object value) {
         this.value = value;
+    }
+
+    @Override
+    public void _read(RandomIO f_tbl) throws IOException {
+        switch (column.getType()) {
+            case INTEGER:
+                value = f_tbl.file.readInt();
+                break;
+            case DOUBLE:
+                value = f_tbl.file.readDouble();
+                break;
+            case STRING:
+                byte size = (byte) (column.getRegisterSize() / 2);
+                StringBuilder sb = new StringBuilder(size);
+                for (byte i = 0; i < size; i++) {
+                    char c = f_tbl.file.readChar();
+                    if (c != 0x0)
+                        sb.append(c);
+                }
+                value = sb.toString();
+                break;
+            case UNASSIGNED:
+                break;
+            case DELETED:
+                break;
+        }
     }
 }

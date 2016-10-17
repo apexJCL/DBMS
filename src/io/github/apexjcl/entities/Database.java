@@ -54,7 +54,9 @@ public class Database implements DatabaseInterface {
     private void _loadDB() throws Exception {
         dbdata = new RandomIO(this.workpath + StringConstants.DB_DATA_FILENAME, RandomIO.FileMode.RW, false);
         this.tableID = _readUniqueTableID();
-        String[] table_files = workdir.list((dir, name) -> name.matches(".*\\.tbl"));
+        String[] table_files = workdir.list((dir, name) -> {
+            return name.matches(".*\\.tbl");
+        });
         tableMap = new HashMap<>(table_files.length);
         tableIDMap = new HashMap<>(table_files.length);
         for (byte i = 0; i < table_files.length; i++) {

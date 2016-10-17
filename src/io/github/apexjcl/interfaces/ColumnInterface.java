@@ -1,5 +1,7 @@
 package io.github.apexjcl.interfaces;
 
+import io.github.apexjcl.entities.Column;
+
 /**
  * This interface defines the behaviour of the column, as basic methods that must be there.
  * <p>
@@ -60,7 +62,10 @@ public interface ColumnInterface {
      * @return
      */
     byte getOffset();
+
     void setOffset(byte offset);
+
+    byte _getNameCharAmount();
 
     // Types
 

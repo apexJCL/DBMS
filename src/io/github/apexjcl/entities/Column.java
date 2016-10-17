@@ -131,7 +131,7 @@ public class Column implements ColumnInterface {
      * @throws Exception
      */
     public static Column newString(String name, int UTID, int UCID, byte length) throws Exception {
-        Column tmp = newString(name, length, UCID);
+        Column tmp = newString(name, (byte) (length / 2), UCID);
         tmp.tid = UTID;
         return tmp;
     }
@@ -201,9 +201,7 @@ public class Column implements ColumnInterface {
      */
     private static Column _newColumn(String name, Type type, int UCID) throws Exception {
         Column tmp = new Column();
-        StringBuilder sb = new StringBuilder(name.length() + 2);
-        sb.append(name).append("\r\n");
-        tmp.name = sb.toString(); // Column name is delimited by a CRLF
+        tmp.name = name; // Column name is delimited by a CRLF
         switch (type) {
             case INTEGER:
                 tmp.size = 4;
@@ -331,6 +329,11 @@ public class Column implements ColumnInterface {
     @Override
     public void setOffset(byte offset) {
         this.offset = offset;
+    }
+
+    @Override
+    public byte _getNameCharAmount() {
+        return (byte) (this.name.length() * 2);
     }
 
     public byte getTypeAsByte() {
