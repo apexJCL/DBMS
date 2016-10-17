@@ -21,8 +21,8 @@ public class Cell implements CellInterface {
     private Column column;
     private Object value;
 
-    public Cell() throws Exception {
-        throw new Exception("Empty constructor not allowed");
+    public Cell() {
+
     }
 
     public Cell(Column columnReference, Object value) {
